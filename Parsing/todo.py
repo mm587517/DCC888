@@ -66,6 +66,7 @@ def file2cfg_and_env(lines: list[str]) -> tuple[Env, list[Inst]]:
         9
     """
     # TODO: Imlement this method.
+    operations = {"add": Add}
     env = line2env(lines[0])
     insts = []
     return (env, insts)
