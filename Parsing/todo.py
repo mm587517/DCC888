@@ -13,7 +13,7 @@ As an example, the program below sums up the numbers a, b and c:
     l2 = x = add x c
 """
 
-from lang import Env, Inst
+from lang import *
 
 
 def line2env(line: str) -> Env:
@@ -66,6 +66,42 @@ def file2cfg_and_env(lines: list[str]) -> tuple[Env, list[Inst]]:
         9
     """
     # TODO: Imlement this method.
+    operations = {"add": Add, "mul": Mul, "bt": Bt, "geq": Geq, "lth": Lth}
+
+    def parser(line: str):
+        words = line.strip().split()
+        if "=" in words:
+            # Assignment format: x = op a b
+            return {"op": words[2], "dst": words[0], "arg1": words[3], "arg2": words[4]}
+        else:
+            # Branch format: bt x i0 i1
+            return {
+                "op": words[0],
+                "arg1": words[1],
+                "arg2": int(words[2]),
+            }
+
     env = line2env(lines[0])
     insts = []
-    return (env, insts)
+    bt_fix = []
+
+    for line in lines[1:]:
+        result = parser(line)
+        op = result["op"]
+        cls = operations[op]
+
+        if op == "bt":
+            insts.append(None)
+            bt_fix.append((len(insts) - 1, result["arg1"], result["arg2"]))
+        else:
+            # Binary operation: dst = op arg1 arg2
+            insts.append(cls(result["dst"], result["arg1"], result["arg2"]))
+
+    for idx, cond, target in bt_fix:
+        insts[idx] = Bt(cond, insts[target], insts[idx + 1])
+
+    for inst, next_inst in zip(insts, insts[1:]):
+        if not isinstance(inst, Bt):
+            inst.add_next(next_inst)
+
+    return env, insts
