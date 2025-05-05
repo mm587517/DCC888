@@ -1,5 +1,6 @@
-from lang import Inst, BinOp, Bt
 from abc import ABC, abstractmethod
+
+from lang import *
 
 
 class DataFlowEq(ABC):
@@ -174,7 +175,7 @@ class ReachingDefs_Bt_OUT_Eq(OUT_Eq):
             'OUT_0: IN_0'
         """
         kill_set = f"{name_in(self.inst.ID)}"
-        gen_set = f""
+        gen_set = ""
         return f"{self.name()}: {gen_set}{kill_set}"
 
 
@@ -241,6 +242,20 @@ class LivenessAnalysisIN_Eq(IN_Eq):
             ['a', 'b']
         """
         # TODO: implement this method
+        out_set = data_flow_env[name_out(self.inst.ID)]
+
+        gen = set()
+        kill = set()
+
+        if isinstance(self.inst, Bt):
+            gen.add(self.inst.ID)
+
+        elif isinstance(self.inst, BinOp):
+            gen.update([self.inst.src0, self.inst.src1])
+            kill.add(self.inst.dst)
+
+        in_set = gen.union(out_set.difference(kill))
+        return in_set
 
     def __str__(self):
         """
@@ -275,6 +290,10 @@ class LivenessAnalysisOUT_Eq(OUT_Eq):
             ['a', 'c', 'd']
         """
         # TODO: implement this method
+        solution = set()
+        for inst in self.inst.nexts:
+            solution = solution.union(data_flow_env[name_in(inst.ID)])
+        return solution
 
     def __str__(self):
         """
@@ -332,7 +351,9 @@ def liveness_constraint_gen(insts: list[Inst]) -> list[DataFlowEq]:
         "IN_0: (OUT_0 - {'c'}) + ['a', 'b'] IN_1: (OUT_1 - {'d'}) + ['a', 'c']"
     """
     # TODO: implement this method.
-    return []
+    inc = [LivenessAnalysisIN_Eq(i) for i in insts]
+    out = [LivenessAnalysisOUT_Eq(i) for i in insts]
+    return inc + out
 
 
 def abstract_interp(equations):
