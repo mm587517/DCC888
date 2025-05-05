@@ -1,4 +1,4 @@
-from lang import Env, Inst, BinOp, Bt
+from lang import *
 from abc import ABC, abstractmethod
 
 
@@ -264,7 +264,7 @@ class ReachingDefs_IN_Eq(IN_Eq):
             ['OUT_0', 'OUT_1']
         """
         # TODO: Implement this method
-        return []
+        return [name_out(pred.ID) for pred in self.inst.preds]
 
     def __str__(self):
         """
@@ -350,6 +350,12 @@ def build_dependence_graph(equations) -> dict[str, list[DataFlowEq]]:
     """
     # TODO: implement this method
     dep_graph = {eq.name(): [] for eq in equations}
+
+    for eq in equations:
+        for dep_name in eq.deps():                  
+            if dep_name not in dep_graph:
+                dep_graph[dep_name] = []             
+            dep_graph[dep_name].append(eq)           
     return dep_graph
 
 
@@ -374,4 +380,14 @@ def abstract_interp_worklist(equations) -> tuple[Env, int]:
 
     DataFlowEq.num_evals = 0
     env = defaultdict(list)
+
+    dep_graph = build_dependence_graph(equations=equations)
+    worklist = equations
+
+    while worklist:
+        eq = worklist.pop()
+        if eq.eval(env):
+            worklist.extend(dep_graph[eq.name()])
+
+
     return (env, DataFlowEq.num_evals)
